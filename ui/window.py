@@ -259,7 +259,7 @@ class Window(QMainWindow):
             fields[key]=widget;layout.addRow(self.t(key.replace('_',' ').title()),widget)
         button=QPushButton(self.t('Save'));layout.addRow(button)
         def save():
-            values={k:(w.currentData() if isinstance(w,QComboBox) else w.text()) for k,w in fields.items()};self.settings.save(self.user,values);self.config=self.settings.for_user(self.user);self.set_theme(values['theme']);self.backup_timer.setInterval(int(self.config['backup_minutes'])*60000);self.message('Success',self.t('Settings saved')+' • Restart to apply language changes.')
+            values={k:(w.currentData() if isinstance(w,QComboBox) else w.text()) for k,w in fields.items()};self.settings.save(self.user,values);self.settings.save_preferences(self.user,{k:values[k] for k in ('theme','printer_name','paper_width')});self.config=self.settings.for_user(self.user);self.set_theme(values['theme']);self.backup_timer.setInterval(int(self.config['backup_minutes'])*60000);self.message('Success',self.t('Settings saved')+' • Restart to apply language changes.')
         button.clicked.connect(lambda:self.safe(save));return scroll
 
     def backup_page(self):

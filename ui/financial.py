@@ -14,7 +14,7 @@ class DateRange(QWidget):
         today=business_today()
         self.start,self.end=QDateEdit(),QDateEdit()
         for label,editor in [('From date',self.start),('To date',self.end)]:
-            editor.setDisplayFormat('yyyy-MM-dd');editor.setCalendarPopup(True);editor.setKeyboardTracking(False)
+            editor.setDisplayFormat('yyyy-MM-dd');editor.setCalendarPopup(True);editor.setKeyboardTracking(False);editor.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
             editor.setDate(QDate(today.year,today.month,today.day));editor.setMinimumWidth(130)
             layout.addWidget(QLabel(window.t(label)));layout.addWidget(editor)
         for label,key in [('Today','day'),('This week','week'),('This month','month')]:

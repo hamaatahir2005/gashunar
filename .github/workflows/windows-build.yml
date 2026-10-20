@@ -46,19 +46,28 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
+          retries: 3
           script: |
             const fs = require('fs');
             const path = require('path');
             const { owner, repo } = context.repo;
             const source = context.payload.pull_request?.head.sha || context.sha;
             const tag = `v0.2.0-build-${context.runNumber}`;
-            const release = await github.rest.repos.createRelease({
+            let release;
+            try { release = await github.rest.repos.getReleaseByTag({owner,repo,tag}); }
+            catch(error) {
+              if(error.status!==404)throw error;
+              release = await github.rest.repos.createRelease({
               owner, repo, tag_name: tag, target_commitish: source,
               name: `GAS HUNAR 0.2 — development build ${context.runNumber}`,
               prerelease: true, draft: false,
               body: 'Offline Windows EXE with light/dark appearance, daily/weekly/monthly profit, inclusive manual date ranges, local product-photo forms and 58/80mm receipt printing. Automated tests and packaged EXE self-check passed. This is a development build: physical printer and installer/update acceptance remain unverified. Download GAS HUNAR.exe below; Python is not required on the destination computer.'
-            });
+              });
+            }
+            const existingAssets = await github.rest.repos.listReleaseAssets({owner,repo,release_id:release.data.id});
             for (const name of ['GAS HUNAR.exe', 'SHA256.txt', 'build-dependencies.txt']) {
+              const normalized=name.replaceAll(' ','.');
+              if(existingAssets.data.some(a=>a.name===name||a.name===normalized))continue;
               await github.rest.repos.uploadReleaseAsset({owner, repo, release_id: release.data.id, name,
                 data: fs.readFileSync(path.join('dist', name)),
                 headers: {'content-type': name.endsWith('.exe') ? 'application/octet-stream' : 'text/plain'}});

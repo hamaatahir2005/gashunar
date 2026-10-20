@@ -55,7 +55,7 @@ def generate_pdf(db, order_id, settings, target):
     pdfmetrics.registerFont(TTFont('GHUnicode', str(font)))
     width = 210*mm if settings.get('paper_width') == 'A4' else int(settings.get('paper_width', '80'))*mm
     order, invoice, items, modifiers, paid = receipt_data(db, order_id)
-    logical = [settings['restaurant_name'], settings.get('address',''), settings.get('phone',''), settings.get('receipt_header',''), invoice.number if invoice else 'DRAFT', order.created_at[:19], order.status]
+    logical = [settings['restaurant_name'], settings.get('address',''), settings.get('phone',''), settings.get('receipt_header',''), invoice.number if invoice else 'DRAFT', datetime.fromisoformat(order.created_at).astimezone(BUSINESS_TZ).strftime('%Y-%m-%d %H:%M'), tr(order.status, settings.get('language','ckb'))]
     for item in items:
         logical.extend([item.name, f'{item.quantity} × {money(item.price)} = {money(item.price*item.quantity)}', item.notes])
         logical.extend(m.name for m in modifiers[item.id])
