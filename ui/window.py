@@ -284,7 +284,7 @@ class Window(QMainWindow):
         if v:self.auth.change_password(self.user,v['old_password'],v['new_password']);self.message('Success',self.t('Change password'))
     def logout(self):
         from ui.login import Login
-        dialog=Login(self.auth,self.language,self)
+        dialog=Login(self.auth,self.language,self,allow_signup=False)
         self.locked=True
         if dialog.exec()==QDialog.DialogCode.Accepted:
             self.locked=False;self.last_activity=datetime.now()

@@ -52,16 +52,16 @@ jobs:
             const path = require('path');
             const { owner, repo } = context.repo;
             const source = context.payload.pull_request?.head.sha || context.sha;
-            const tag = `v0.2.0-build-${context.runNumber}`;
+            const tag = `v0.3.0-build-${context.runNumber}`;
             let release;
             try { release = await github.rest.repos.getReleaseByTag({owner,repo,tag}); }
             catch(error) {
               if(error.status!==404)throw error;
               release = await github.rest.repos.createRelease({
               owner, repo, tag_name: tag, target_commitish: source,
-              name: `GAS HUNAR 0.2 — development build ${context.runNumber}`,
+              name: `GAS HUNAR 0.3 — development build ${context.runNumber}`,
               prerelease: true, draft: false,
-              body: 'Offline Windows EXE with light/dark appearance, daily/weekly/monthly profit, inclusive manual date ranges, local product-photo forms and 58/80mm receipt printing. Automated tests and packaged EXE self-check passed. This is a development build: physical printer and installer/update acceptance remain unverified. Download GAS HUNAR.exe below; Python is not required on the destination computer.'
+              body: 'Offline Windows EXE with local sign-up and login, first-account administrator setup, restricted cashier registration, light/dark appearance, profit reporting, product photos and thermal receipts. Automated tests and packaged EXE self-check passed. This is a development build: physical printer and installer/update acceptance remain unverified. Download GAS HUNAR.exe below; Python is not required on the destination computer.'
               });
             }
             const existingAssets = await github.rest.repos.listReleaseAssets({owner,repo,release_id:release.data.id});

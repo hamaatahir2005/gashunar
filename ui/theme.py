@@ -10,6 +10,11 @@ def stylesheet(theme):
     return f'''
     QWidget {{ background:{p['bg']}; color:{p['text']}; font-family:"DejaVu Sans","Segoe UI"; font-size:12px; }}
     QMainWindow {{background:{p['bg']};}}
+    QTabWidget::pane {{border:1px solid {p['border']};border-radius:10px;background:{p['panel']};}}
+    QTabBar::tab {{background:{p['raised']};color:{p['muted']};padding:11px 28px;border:1px solid {p['border']};border-top-left-radius:7px;border-top-right-radius:7px;}}
+    QTabBar::tab:selected {{color:{p['gold']};background:{p['panel']};border-bottom:2px solid {p['gold']};font-weight:700;}}
+    QCheckBox {{background:transparent;padding:5px;}}
+
     QLabel {{background:transparent;}}
     QLabel#heading {{font-size:23px;font-weight:700;padding:8px 0;}}
     QLabel#brand {{font-size:19px;color:{p['gold']};font-weight:700;padding:9px 2px;}}
