@@ -11,7 +11,7 @@ def csv_report(path, summary):
             writer.writerow([key, value if key in counts else amount(value), 'count' if key in counts else 'IQD'])
 
 
-def pdf_report(path, summary, title):
+def pdf_report(path, summary, title, period=""):
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfbase import pdfmetrics
@@ -24,7 +24,11 @@ def pdf_report(path, summary, title):
     c.setFont('GHUnicode',16)
     c.drawString(40,800,get_display(arabic_reshaper.reshape(title)))
     c.setFont('GHUnicode',11)
-    y=760
+    if period:
+        c.setFont("GHUnicode",9)
+        c.drawString(40,778,get_display(arabic_reshaper.reshape(period)))
+        c.setFont("GHUnicode",11)
+    y=750
     counts = {'orders','customers','completed','open_tables','pending_kitchen','low_stock'}
     for key,value in summary.items():
         c.drawString(40,y,key.replace('_',' ').title())

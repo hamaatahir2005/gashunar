@@ -8,3 +8,38 @@ TEXT = {
 
 def tr(text, language='ckb'):
     return TEXT.get(language, {}).get(text, text)
+
+# Version 0.2: reporting, product-photo forms, themes and printer controls.
+TEXT['ckb'].update({
+ 'Financial overview':'پوختەی دارایی','Your restaurant, at a glance':'چێشتخانەکەت لە یەک نیگادا',
+ 'Profit = revenue − food cost − expenses':'قازانج = داهات − تێچووی خواردن − خەرجی',
+ 'From date':'لە بەرواری','To date':'تا بەرواری','This week':'ئەم هەفتەیە','This month':'ئەم مانگە',
+ 'Calculate':'حیسابکردن','Both dates included · Iraq time · Week starts Saturday':'هەردوو بەروارەکە دەژمێردرێن · کاتی عێراق · دەستپێکی هەفتە: شەممە',
+ 'Day profit':'قازانجی ڕۆژ','Week profit':'قازانجی هەفتە','Month profit':'قازانجی مانگ',
+ 'Period cards follow the selected end date':'قازانجی ڕۆژ و هەفتە و مانگ بەپێی بەرواری کۆتایی هەڵبژێردراوە',
+ 'Cost of goods':'تێچووی خواردن','Daily net profit':'قازانجی خاوێنی ڕۆژانە','Best sellers':'پڕفرۆشترین بەرهەمەکان',
+ 'Export complete':'هەناردەکردن تەواو بوو','Start date must not be after end date':'بەرواری دەستپێک نابێت دوای بەرواری کۆتایی بێت',
+ 'Add product':'زیادکردنی بەرهەم','Edit product':'دەستکاری بەرهەم','Save product':'پاشەکەوتکردنی بەرهەم',
+ 'Image':'وێنە','Product photo':'وێنەی بەرهەم','Upload image':'بارکردنی وێنە','Archived':'ئەرشیفکراو',
+ 'Local PNG / JPEG / WebP · up to 15 MB':'وێنەی ناوخۆ PNG / JPEG / WebP · تا ١٥ مێگابایت',
+ 'Archive selected product?':'بەرهەمی هەڵبژێردراو ئەرشیف بکرێت؟','Workspace':'بەشی کار',
+ 'Offline':'بێ ئینتەرنێت','Appearance':'ڕووکار','Receipt printer':'پرێنتەری وەسڵ','Paper width':'پانی کاغەز',
+ 'Print preview':'پێشبینینی چاپ','Save PDF':'پاشەکەوتکردنی PDF','No printers installed':'هیچ پرێنتەرێک دانەمەزراوە',
+ 'Install a Windows printer to print. PDF export is still available.':'بۆ چاپکردن پرێنتەرێک لە Windows دابمەزرێنە. هەناردەی PDF بەردەستە.',
+ 'Printer preferences saved':'هەڵبژاردەکانی پرێنتەر پاشەکەوت کران','Balance due':'پارەی ماوە',
+ 'takeaway':'بردنەوە','dine-in':'ناو چێشتخانە','delivery':'گەیاندن','new':'نوێ','preparing':'لە ئامادەکردندایە','ready':'ئامادەیە','completed':'تەواوکراو','confirmed':'پەسەندکراو','held':'ڕاگیراو','refunded':'گەڕێندراوە','cancelled':'هەڵوەشێندراوە',
+})
+TEXT['ar'].update({
+ 'Financial overview':'نظرة مالية','Your restaurant, at a glance':'مطعمك في لمحة','Profit = revenue − food cost − expenses':'الربح = الإيراد − تكلفة الطعام − المصروفات',
+ 'From date':'من تاريخ','To date':'إلى تاريخ','This week':'هذا الأسبوع','This month':'هذا الشهر','Today':'اليوم','Calculate':'احسب',
+ 'Both dates included · Iraq time · Week starts Saturday':'التاريخان مشمولان · توقيت العراق · يبدأ الأسبوع السبت',
+ 'Day profit':'ربح اليوم','Week profit':'ربح الأسبوع','Month profit':'ربح الشهر','Period cards follow the selected end date':'تعتمد الفترات على تاريخ النهاية المحدد',
+ 'Cost of goods':'تكلفة الطعام','Daily net profit':'صافي الربح اليومي','Best sellers':'الأكثر مبيعاً','Export complete':'تم التصدير',
+ 'Start date must not be after end date':'يجب ألا يتجاوز تاريخ البداية تاريخ النهاية','Add product':'إضافة منتج','Edit product':'تعديل المنتج','Save product':'حفظ المنتج',
+ 'Image':'الصورة','Product photo':'صورة المنتج','Upload image':'رفع صورة','Archived':'مؤرشف','Local PNG / JPEG / WebP · up to 15 MB':'صورة محلية PNG / JPEG / WebP · حتى 15 ميغابايت',
+ 'Archive selected product?':'أرشفة المنتج المحدد؟','Workspace':'مساحة العمل','Offline':'غير متصل','Appearance':'المظهر','Dark':'داكن','Light':'فاتح',
+ 'Receipt printer':'طابعة الإيصالات','Paper width':'عرض الورق','Print preview':'معاينة الطباعة','Save PDF':'حفظ PDF','No printers installed':'لا توجد طابعات مثبتة',
+ 'Install a Windows printer to print. PDF export is still available.':'ثبّت طابعة في Windows للطباعة. يمكنك تصدير PDF.',
+ 'Printer preferences saved':'تم حفظ إعدادات الطابعة','Balance due':'الرصيد المستحق',
+ 'takeaway':'سفري','dine-in':'داخل المطعم','delivery':'توصيل','new':'جديد','preparing':'قيد التحضير','ready':'جاهز','completed':'مكتمل','confirmed':'مؤكد','held':'معلق','refunded':'مسترد','cancelled':'ملغى',
+})

@@ -19,7 +19,7 @@ def run(output):
     from services.settings import Settings
     from core.paths import resource
     from ui.window import Window
-    from printing.receipts import generate_pdf
+    from printing.receipts import generate_pdf,qt_receipt_pdf,receipt_html
     output=Path(output).resolve();output.mkdir(parents=True,exist_ok=True)
     result={'success':False}
     try:
@@ -34,12 +34,13 @@ def run(output):
             orders=Orders(db,auth);oid=orders.hold(actor,[{'product_id':p,'quantity':1}])
             orders.pay(actor,oid,[('card','10000')],uuid4().hex)
             generate_pdf(db,oid,Settings(db,auth).all(),output/'receipt.pdf')
+            qt_receipt_pdf(receipt_html(db,oid,Settings(db,auth).all()),output/'thermal-58mm.pdf','58')
             backup=Backup(db,auth);backup.create(actor)
             if db.integrity()!='ok':raise RuntimeError('SQLite integrity check failed')
-            window=Window(db,auth,actor);window.show();window.statusBar().showMessage('PACKAGED EXE SELF-CHECK • DEMO DATA');app.processEvents()
+            window=Window(db,auth,actor);window.set_theme('light');window.set_theme('dark');window.show();window.statusBar().showMessage('PACKAGED EXE SELF-CHECK • DEMO DATA');app.processEvents()
             if not window.grab().save(str(output/'packaged-exe.png'),'PNG'):raise RuntimeError('Screenshot failed')
             window.close();app.processEvents();db.engine.dispose()
-            result={'success':True,'sqlite_integrity':'ok','unicode_pdf':True,'backup_verified':True,'native_window_captured':True}
+            result={'success':True,'sqlite_integrity':'ok','unicode_pdf':True,'backup_verified':True,'native_window_captured':True,'theme_switching':True,'thermal_qt_pdf':True}
     except Exception as exc:
         result['error']=str(exc)
     (output/'self-check.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

@@ -29,7 +29,7 @@ class POS(QWidget):
         scroll=QScrollArea();scroll.setWidgetResizable(True);self.products=QWidget();self.grid=QGridLayout(self.products);self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         scroll.setWidget(self.products);left.addWidget(scroll)
         self.kind=QComboBox()
-        for text in ('takeaway','dine-in','delivery'): self.kind.addItem(text,text)
+        for text in ('takeaway','dine-in','delivery'): self.kind.addItem(window.t(text),text)
         self.table=QComboBox();self.customer=QComboBox()
         self.table.addItem(window.t('Table')+' —',None);self.customer.addItem(window.t('Customer')+' —',None)
         with window.db.read() as s:
@@ -52,6 +52,14 @@ class POS(QWidget):
         QShortcut(QKeySequence('F9'),self,activated=lambda:window.safe(self.pay))
         self.reload_products()
 
+    def reload(self):
+        current=self.category.currentData();self.category.blockSignals(True);self.category.clear();self.category.addItem('—',None)
+        with self.w.db.read() as s:
+            for category in s.scalars(select(Category).order_by(Category.sort,Category.name)):
+                self.category.addItem(category.name,category.id)
+        self.category.setCurrentIndex(max(self.category.findData(current),0));self.category.blockSignals(False)
+        self.reload_products()
+
     def reload_products(self):
         while self.grid.count():
             item=self.grid.takeAt(0)
@@ -59,11 +67,11 @@ class POS(QWidget):
         products=self.w.catalog.list(self.w.user,self.search.text(),self.category.currentData(),limit=150)
         with self.w.db.read() as s:
             for index,p in enumerate(products):
-                b=QPushButton(f'{p.name}\n{money(p.price)}');b.setMinimumSize(140,100)
+                b=QPushButton(f'{p.name}\n{money(p.price)}');b.setObjectName('productTile');b.setMinimumSize(145,124)
                 image=s.scalar(select(ProductImage).where(ProductImage.product_id==p.id).order_by(ProductImage.id.desc()))
                 if image:
                     from PySide6.QtCore import QSize
-                    b.setIcon(QIcon(str(self.w.db.path.parent/image.path)));b.setIconSize(QSize(64,54))
+                    b.setIcon(QIcon(str(self.w.db.path.parent/image.path)));b.setIconSize(QSize(80,66))
                 b.clicked.connect(lambda _,product=p:self.w.safe(lambda:self.add(product)));self.grid.addWidget(b,index//3,index%3)
 
     def barcode(self):

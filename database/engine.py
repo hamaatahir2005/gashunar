@@ -9,7 +9,7 @@ SCHEMA_VERSION = 1
 DEFAULTS = {'language': 'ckb', 'theme': 'dark', 'restaurant_name': 'GAS HUNAR — گەس هونەر',
             'address': '', 'phone': '', 'receipt_header': 'بەخێربێن', 'receipt_footer': 'سوپاس بۆ سەردانەکەتان',
             'currency': 'IQD', 'precision': '0', 'tax_rate': '0', 'service_rate': '0',
-            'prevent_negative_stock': 'true', 'invoice_prefix': 'GH-', 'paper_width': '80',
+            'prevent_negative_stock': 'true', 'invoice_prefix': 'GH-', 'paper_width': '80', 'printer_name': '',
             'backup_minutes': '60', 'backup_retention': '30', 'backup_location': '', 'lock_minutes': '15'}
 ROLE_ACTIONS = {'admin': ['*'], 'manager': ['products', 'pos', 'kitchen', 'tables', 'inventory', 'expenses', 'reports', 'customers', 'employees', 'refunds', 'backup'],
                 'cashier': ['pos', 'customers'], 'waiter': ['pos', 'tables'], 'kitchen': ['kitchen']}
