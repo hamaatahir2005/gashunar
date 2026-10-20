@@ -1,6 +1,6 @@
 # Implementation and verification checklist
 
-Release: **0.1.0 development phase — not production accepted**.
+Release: **0.2.0 development phase — not production accepted**.
 
 ## Verified Windows build — 2026-10-20
 
@@ -13,6 +13,18 @@ Release: **0.1.0 development phase — not production accepted**.
 Extract the ZIP and run `GAS HUNAR.exe`. Python is not required on the destination computer. First launch asks you to create your own administrator account. Screenshots use isolated demo data.
 
 This is a development build. Advanced feature gaps, physical printer testing and installer/update acceptance are still tracked in STATUS.md. Earlier local Linux verification blockers below describe the earlier phase and are superseded by this Windows build.
+
+## Current 0.2 Windows verification — supersedes earlier phase notes
+
+- Successful complete pipeline: https://github.com/hamaatahir2005/gashunar/actions/runs/39393757558
+- 26 automated tests passed. Both themes, inclusive manual date ranges, Iraq calendar periods, atomic photo uploads and Qt 58/80mm/A4 PDF layouts are covered.
+- Native EXE built and actually executed; packaged database/backup/Unicode PDF/thermal PDF/theme/window self-check passed.
+- Actual dark/light dashboard, product form and receipt screenshots were inspected.
+- Public download: https://github.com/hamaatahir2005/gashunar/releases/tag/v0.2.0-build-4
+- Public screenshots: https://github.com/hamaatahir2005/gashunar/tree/build-previews
+- Physical printer and installer/update acceptance remain unverified. Broader advanced features below remain backlog.
+
+Earlier Linux dependency blockers and 0.1 build notes below are historical; they do not describe the current successful Windows verification.
 
 ## Created in source
 
@@ -61,7 +73,7 @@ This is a development build. Advanced feature gaps, physical printer testing and
 - [ ] Expense attachments, approval workflow, custom expense category management.
 - [ ] Daily financial closing, product/category profitability and complete cash-flow ledger.
 - [ ] All requested dashboard comparisons; full cash balance; extended tax reconciliation.
-- [ ] Receipt logo/editor and date formatting, saved printer preference, direct Windows printer/thermal hardware tests.
+- [ ] Receipt logo/editor and additional date formatting; physical Windows printer/thermal hardware tests. Saved per-user printer preferences, print dialog and thermal layout are implemented in 0.2.
 - [ ] Complete Arabic/Sorani field/error translations and external linguistic review. Navigation is translated; some fields/errors remain English.
 - [ ] Optional encrypted backups, asset-inclusive backup/restore, backup-history checksum selection during restore.
 - [ ] Paginated query UI, large-dataset performance, async dashboard/exit backup, responsive screen polish and screenshots.

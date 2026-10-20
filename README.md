@@ -1,22 +1,37 @@
 # GAS HUNAR — گەس هونەر
 
-A native, offline restaurant desktop application in Python 3.12, PySide6, SQLAlchemy and SQLite. **Development phase 0.1.0: substantial application source is present; production acceptance is incomplete.** See [the exact checklist](docs/STATUS.md), including missing features and verification blockers.
+Native, offline Windows restaurant management application: Python 3.12, PySide6, SQLAlchemy and SQLite. **Version 0.2 is a development release.** The remaining production/advanced-feature backlog is tracked in [docs/STATUS.md](docs/STATUS.md).
 
-## Verified Windows build — 2026-10-20
+## Download and run
 
-**GAS HUNAR.exe was generated and executed successfully on Windows GitHub Actions.**
+- [Download Windows EXE — no Python required](https://github.com/hamaatahir2005/gashunar/releases/download/v0.2.0-build-4/GAS.HUNAR.exe)
+- [Release and SHA-256](https://github.com/hamaatahir2005/gashunar/releases/tag/v0.2.0-build-4)
+- [Real screenshots: dark/light, POS, products, reports, receipt](https://github.com/hamaatahir2005/gashunar/tree/build-previews)
+- [Successful Windows test/build run](https://github.com/hamaatahir2005/gashunar/actions/runs/39393757558)
 
-- [Download Windows EXE and screenshots (ZIP)](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248961027)
-- [Download screenshots and test results](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248486939)
-- [Successful Windows run](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887): 18 automated tests passed, real Qt screenshots captured, PyInstaller EXE built, packaged EXE self-check passed.
+GitHub public release downloads work without signing in. GitHub normalizes spaces in release asset names to dots; the packaged artifact contains the original `GAS HUNAR.exe` filename.
 
-Extract the ZIP and run `GAS HUNAR.exe`. Python is not required on the destination computer. First launch asks you to create your own administrator account. Screenshots use isolated demo data.
+Create your own administrator account on first launch. There is no default password or cloud login. The application works without internet; screenshots contain isolated demo records, not your restaurant data. Writable data is stored under `%LOCALAPPDATA%\GAS HUNAR`, never inside the executable or installation folder. `GAS_HUNAR_DATA` can override this for testing.
 
-This is a development build. Advanced feature gaps, physical printer testing and installer/update acceptance are still tracked in docs/STATUS.md. Earlier local Linux verification blockers below describe the earlier phase and are superseded by this Windows build.
+## بەکارهێنانی تایبەتمەندییە نوێکان
 
-## Run from source
+- لە سەرەوەی شاشە، **ڕووکار** بگۆڕە بۆ **ڕوون** یان **تاریک**. هەڵبژاردەکە بۆ هەر بەکارهێنەرێک جیاواز پاشەکەوت دەکرێت.
+- لە داشبۆرد و ڕاپۆرت، **لە بەرواری** و **تا بەرواری** بنووسە یان لە ڕۆژژمێر هەڵیبژێرە؛ پاشان **حیسابکردن** دابگرە. هەردوو بەروارەکە دەژمێردرێن.
+- کارتەکانی **قازانجی ڕۆژ، هەفتە و مانگ** بەپێی بەرواری کۆتایی هەڵبژێردراو حیساب دەکرێن. کات: عێراق؛ هەفتە: شەممە تا هەینی.
+- لە **بەرهەمەکان → زیادکردنی بەرهەم → بارکردنی وێنە** وێنەی ناوخۆیی هەڵبژێرە. نرخ و ناو و کۆد بنووسە و پاشەکەوتی بکە. وێنە لە کاشێر و لیستی بەرهەمەکان دەردەکەوێت.
+- لە وەسڵدا پرێنتەری دامەزراوی Windows و پانی **٥٨ ملم / ٨٠ ملم / A4** هەڵبژێرە. **پێشبینینی چاپ، چاپکردن و PDF** بەردەستن. هەڵبژاردەکانی پرێنتەر پاشەکەوت دەکرێن.
 
-On a machine with Python 3.12:
+## Cashier and accounting
+
+Open a drawer before cash operations. Select products, quantities and notes, choose takeaway/dine-in/delivery, then hold or pay. F2 focuses search/barcode, F8 holds, F9 pays. Resume held/partially paid orders under Orders. Confirmation issues an invoice and deducts recipes atomically. Confirmed sales are immutable. Cash/card allocations and partial payments are supported; full-order refunds can optionally restore original stock movements.
+
+Net profit = net revenue − food cost − operating expenses. Tax is excluded from revenue. Purchases are inventory assets, not duplicate operating expenses. Cash receipts differ from revenue. Date filters do not change or backdate confirmed sales. Read [accounting rules](docs/ARCHITECTURE.md).
+
+## Verified scope
+
+Windows CI run `39393757558` passed **26 tests**, captured real Qt screens, built the EXE, and actually executed its self-check (SQLite, backups, Unicode PDF, thermal Qt PDF, theme switching and native window capture). Local syntax compilation and 10 dependency-free checks also passed. Physical thermal printing, installer/update behavior and a full Windows 10/11 device matrix remain unverified.
+
+## Development and packaging
 
 ```powershell
 py -3.12 -m venv .venv
@@ -24,50 +39,18 @@ py -3.12 -m venv .venv
 .venv\Scripts\python main.py
 ```
 
-Linux development uses `.venv/bin/python`. No network is used by the application at runtime. Dependency installation/building requires available packages; an offline wheelhouse can be supplied to the Windows build script. A Python installation is only needed for development/building, not for a successfully packaged EXE.
-
-Create your own first administrator passphrase. There is no default password. Kurdish Sorani/RTL and dark theme are defaults. Language/theme/settings persist; restart after changing language. Some secondary labels/errors are still English. For optional demo menu records, close the app and run `python scripts/seed_demo.py` after administrator setup. The demo never inserts fictional sales.
-
-Writable data: `%LOCALAPPDATA%\GAS HUNAR` on Windows. Set `GAS_HUNAR_DATA` before launching to use another writable directory. Never place it in the installation folder. Backups are database-only; preserve the complete data folder when migrating images or attachments.
-
-## Cashier workflow
-
-1. Create menu items, ingredients and recipes; enter opening stock or purchases.
-2. Open a cash drawer; select products, quantities, notes, order type and optional customer/table.
-3. Hold to save a draft, or Pay to see the final discounted/taxed total and enter cash/card allocations. F2 focuses search/barcode, F8 holds, F9 pays.
-4. Resume held/partially paid orders from Orders. Confirm sends an unpaid order to the local kitchen; Pay can also confirm atomically.
-5. Complete kitchen states, reprint receipts, record expenses, reconcile/close drawer and create verified backups.
-
-Money never uses binary floating-point arithmetic. Revenue excludes tax, includes service and differs from collected cash. Purchases are inventory, not operating expenses. Read [accounting rules and limitations](docs/ARCHITECTURE.md).
-
-## Tests
-
-```powershell
-$env:QT_QPA_PLATFORM="offscreen"
-.venv\Scripts\python -m pytest -q
-.venv\Scripts\python -m unittest discover -s tests -p stdlib_checks.py -v
-```
-
-In the supplied Linux environment, only syntax compilation and the 10 dependency-free checks were executed successfully. Full tests and GUI launch are blocked by unavailable dependencies. No Windows EXE or installer has been generated. [Manual acceptance checklist](docs/MANUAL_TESTS.md).
-
-## Windows build
-
-Run on Windows x64 with Python 3.12; Inno Setup 6 is optional:
+For a Windows x64 build with tests and screenshots, run `BUILD-EXE.bat` or:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
-# Optional installer:
+# Optional installer; requires Inno Setup 6 on PATH:
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1 -Installer
-# Pre-downloaded compatible Windows wheels:
+# Offline build with compatible pre-downloaded Windows wheels:
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1 -Wheelhouse D:\wheels
 ```
 
-The script stops on failed tests/builds. Expected artifacts **after successful Windows execution**: `dist/GAS HUNAR.exe` and optionally `dist/GAS HUNAR Setup.exe`. Includes icon, metadata, shortcuts, uninstall and persistent user data. Building on Linux does not produce a supported Windows EXE. Complete Windows installation/update/uninstall and physical printer validation before release.
+Development/building needs Python and available dependencies. The packaged application does not. Expected build output: `dist/GAS HUNAR.exe`; optional installer: `dist/GAS HUNAR Setup.exe`. The installer has not been built or accepted yet. Uninstall configuration preserves restaurant data.
 
-## One-click Windows build and actual screenshots
+Tests: `python -m pytest -q`; dependency-free checks: `python -m unittest discover -s tests -p stdlib_checks.py -v`. Linux development uses `.venv/bin/python`. Manual acceptance checklist: [docs/MANUAL_TESTS.md](docs/MANUAL_TESTS.md).
 
-On a Windows x64 development computer with Python 3.12 installed, double-click `BUILD-EXE.bat`. It installs dependencies, runs tests, captures actual native Qt windows using a temporary sample database, and packages the EXE. Output is `dist/GAS HUNAR.exe`; screenshots are in `dist/screenshots/`. Installation of dependencies needs internet or a compatible local wheelhouse. The generated program itself works offline. A failed test stops the build.
-
-The screenshot script never opens restaurant data and marks captures as demo data. To capture separately: `python scripts/capture_screenshots.py --output dist/screenshots`. No screenshot is claimed until this command has run successfully.
-
-An optional `.github/workflows/windows-build.yml` provides a manually triggered Windows build and downloadable EXE/screenshots artifact if you place the project in your own GitHub repository. It has not been run here and is not needed by the offline application.
+Backups use SQLite's online backup API, integrity checks, retention and staged restore. Backups are database-only: when moving computers, close the app and preserve the full data folder for uploaded images. Optional demo menu: `python scripts/seed_demo.py` after first-run admin setup, with the app closed and an empty menu. No fictional sales are inserted into real restaurant data.

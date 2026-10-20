@@ -11,4 +11,4 @@ Requested UI and reporting update:
 - Upgrade requires no table changes: new preferences use existing settings rows and defaults are merged for older databases.
 - Windows CI adds public prerelease EXE downloads and a public build-previews branch so users do not need a GitHub artifact login to see screenshots or download the program.
 
-Validation: local syntax and dependency-free checks executed; Windows CI results must be checked before publishing a success claim. The broader advanced-feature backlog in STATUS.md remains open.
+Validation: local syntax and 10 dependency-free checks passed. Windows run 39393757558 passed 26 automated tests, packaged and ran the EXE self-check, and published public downloads/screenshots. The broader advanced-feature backlog in STATUS.md remains open.

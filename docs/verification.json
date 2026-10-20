@@ -1,29 +1,33 @@
 {
-  "windows_run": "https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887",
-  "tested_source_commit": "487cf755d197c3b2c35e7a4ddc1b13fe681620ef",
-  "full_pytest": {
-    "executed": 18,
-    "passed": 18,
-    "platform": "Windows GitHub Actions"
+  "version": "0.2.0",
+  "windows_run": "https://github.com/hamaatahir2005/gashunar/actions/runs/39393757558",
+  "tested_source_commit": "ae1195a97fab85aa2d0eb3a6f08d416a89890bc2",
+  "windows_tests": {
+    "passed": 26,
+    "failed": 0
   },
-  "dependency_free_unittests": {
-    "executed": 10,
-    "passed": 10,
-    "platform": "local Linux"
+  "local_dependency_free_checks": {
+    "passed": 10
   },
   "windows_exe": {
-    "generated": true,
-    "packaged_executable_self_check": "passed",
-    "artifact": "https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248961027",
-    "zip_bytes": 64600908,
-    "artifact_zip_sha256": "40a642db0daa090991a8214e40d77a82be0911b657feadd0a3a3f08ffd057a8d"
+    "built": true,
+    "packaged_self_check": "passed",
+    "public_download": "https://github.com/hamaatahir2005/gashunar/releases/download/v0.2.0-build-4/GAS.HUNAR.exe",
+    "bytes": 64717662,
+    "sha256": "fa335d4e094236f5be5bd7bd40f3ae734270854c0c52690ce576ad8a638cd070"
   },
   "screenshots": {
-    "actual_qt_capture": true,
+    "url": "https://github.com/hamaatahir2005/gashunar/tree/build-previews",
+    "real_qt_captures": true,
     "demo_data": true,
-    "artifact": "https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248486939"
+    "visually_inspected": [
+      "dark dashboard",
+      "light dashboard",
+      "product photo form",
+      "thermal receipt dialog"
+    ]
   },
-  "installer": "not generated or verified",
-  "physical_printers": "not verified",
-  "production_feature_acceptance": "incomplete; see STATUS.md"
+  "physical_printer": "not verified",
+  "installer_update": "not verified",
+  "full_production_acceptance": "incomplete; see STATUS.md"
 }
