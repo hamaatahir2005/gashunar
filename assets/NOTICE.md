@@ -1,1 +1,0 @@
-GAS HUNAR logo artwork was created for this project using geometric shapes and text; no stock images are used. DejaVu Sans is distributed under the Bitstream Vera / DejaVu license included in FONT-LICENSE.txt. Product images are supplied locally by the restaurant and remain its responsibility.
