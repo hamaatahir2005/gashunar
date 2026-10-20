@@ -1,0 +1,44 @@
+name: Windows EXE and real screenshots
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+concurrency:
+  group: gas-hunar-windows-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Test, capture actual Qt screens, and package
+        shell: powershell
+        run: ./scripts/build_windows.ps1
+      - name: Upload test results and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GAS-HUNAR-validation
+          path: |
+            dist/test-results.xml
+            dist/screenshots/*.png
+            dist/exe-self-check/*
+          if-no-files-found: ignore
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: GAS-HUNAR-Windows
+          path: |
+            dist/GAS HUNAR.exe
+            dist/screenshots/*.png
+            dist/exe-self-check/*
+            dist/SHA256.txt
+            dist/build-dependencies.txt
+          if-no-files-found: error
