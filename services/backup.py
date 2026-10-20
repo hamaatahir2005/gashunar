@@ -1,3 +1,4 @@
+from contextlib import closing
 import hashlib
 import os
 from pathlib import Path
@@ -17,7 +18,7 @@ class Backup:
         path = Path(path).resolve()
         if not path.is_file():
             raise ValueError('Backup file not found')
-        with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as con:
+        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as con:
             if con.execute('PRAGMA integrity_check').fetchone()[0] != 'ok' or con.execute('PRAGMA foreign_key_check').fetchall():
                 raise ValueError('Backup integrity verification failed')
             if con.execute('PRAGMA user_version').fetchone()[0] != SCHEMA_VERSION:
@@ -35,7 +36,7 @@ class Backup:
         target = target_dir / ('gas-hunar-' + datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3')
         temporary = target.with_suffix('.partial')
         try:
-            with sqlite3.connect(self.db.path) as source, sqlite3.connect(temporary) as dest:
+            with closing(sqlite3.connect(self.db.path)) as source, closing(sqlite3.connect(temporary)) as dest:
                 source.backup(dest, pages=256)
             digest = self.verify(temporary)
             os.replace(temporary, target)
@@ -55,7 +56,7 @@ class Backup:
         self.create(actor)
         target = self.db.path.parent / 'restore-pending.sqlite3'
         temporary = target.with_suffix('.partial')
-        with sqlite3.connect(Path(source).resolve().as_uri() + '?mode=ro', uri=True) as src, sqlite3.connect(temporary) as dest:
+        with closing(sqlite3.connect(Path(source).resolve().as_uri() + '?mode=ro', uri=True)) as src, closing(sqlite3.connect(temporary)) as dest:
             src.backup(dest)
         self.verify(temporary)
         os.replace(temporary, target)
@@ -71,7 +72,7 @@ class Backup:
         # App holds a process-level QLockFile. Preserve live DB before replacement.
         if path.exists():
             recovery = path.parent / ('before-restore-' + datetime.now().strftime('%Y%m%d%H%M%S') + '.sqlite3')
-            with sqlite3.connect(path) as src, sqlite3.connect(recovery) as dst:
+            with closing(sqlite3.connect(path)) as src, closing(sqlite3.connect(recovery)) as dst:
                 src.backup(dst)
                 src.execute('PRAGMA wal_checkpoint(TRUNCATE)')
         for suffix in ('-wal', '-shm'):
