@@ -1,0 +1,13 @@
+{
+  "source_python_files": 40,
+  "database_tables": 32,
+  "syntax_compilation": "passed",
+  "dependency_free_unittests": {
+    "executed": 10,
+    "passed": 10
+  },
+  "full_pytest": "not executed: missing dependencies; network sandbox blocks installation",
+  "gui_launch": "not verified",
+  "windows_exe": "not generated",
+  "installer": "not generated"
+}
