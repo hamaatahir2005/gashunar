@@ -79,6 +79,11 @@ def main():
             dialog=ProductDialog(window,products[0]);dialog.show();app.processEvents();dialog.grab().save(str(output/'08-product-photo-form.png'),'PNG');dialog.reject()
             from ui.receipt import ReceiptDialog
             receipt=ReceiptDialog(window,oid);receipt.show();app.processEvents();receipt.grab().save(str(output/'09-thermal-receipt.png'),'PNG');receipt.reject()
+            from ui.login import Login
+            auth_dialog=Login(auth,'ckb',window);auth_dialog.show();app.processEvents()
+            auth_dialog.grab().save(str(output/'10-login.png'),'PNG')
+            auth_dialog.tabs.setCurrentIndex(1);app.processEvents()
+            auth_dialog.grab().save(str(output/'11-sign-up.png'),'PNG');auth_dialog.reject()
         finally:
             window.close();app.processEvents();db.engine.dispose()
     return 0

@@ -29,7 +29,17 @@ def run(output):
         QFontDatabase.addApplicationFont(str(font));app.setFont(QFont('DejaVu Sans',10))
         with TemporaryDirectory(prefix='gas-hunar-exe-check-') as folder:
             db=Database(Path(folder)/'check.sqlite3');auth=Auth(db)
-            actor=auth.setup('self-check',secrets.token_urlsafe(32))
+            password=secrets.token_urlsafe(32)
+            actor=auth.sign_up('self-check',password,password)
+            if auth.login('self-check',password)!=actor:raise RuntimeError('Sign-in failed')
+            cashier=auth.sign_up('cashier-check',password,password)
+            if auth.actions(cashier)!={'pos','customers'}:raise RuntimeError('Sign-up permissions are incorrect')
+            from ui.login import Login
+            login=Login(auth);login.show();app.processEvents()
+            if not login.grab().save(str(output/'login-screen.png'),'PNG'):raise RuntimeError('Login capture failed')
+            login.tabs.setCurrentIndex(1);app.processEvents()
+            if not login.grab().save(str(output/'signup-screen.png'),'PNG'):raise RuntimeError('Sign-up capture failed')
+            login.reject()
             p=Catalog(db,auth).save(actor,'کەباب','CHECK','10000','3000')
             orders=Orders(db,auth);oid=orders.hold(actor,[{'product_id':p,'quantity':1}])
             orders.pay(actor,oid,[('card','10000')],uuid4().hex)
@@ -40,7 +50,7 @@ def run(output):
             window=Window(db,auth,actor);window.set_theme('light');window.set_theme('dark');window.show();window.statusBar().showMessage('PACKAGED EXE SELF-CHECK • DEMO DATA');app.processEvents()
             if not window.grab().save(str(output/'packaged-exe.png'),'PNG'):raise RuntimeError('Screenshot failed')
             window.close();app.processEvents();db.engine.dispose()
-            result={'success':True,'sqlite_integrity':'ok','unicode_pdf':True,'backup_verified':True,'native_window_captured':True,'theme_switching':True,'thermal_qt_pdf':True}
+            result={'success':True,'sqlite_integrity':'ok','unicode_pdf':True,'backup_verified':True,'native_window_captured':True,'theme_switching':True,'thermal_qt_pdf':True,'sign_up':True,'sign_in':True,'restricted_new_accounts':True}
     except Exception as exc:
         result['error']=str(exc)
     (output/'self-check.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')

@@ -43,3 +43,39 @@ TEXT['ar'].update({
  'Printer preferences saved':'تم حفظ إعدادات الطابعة','Balance due':'الرصيد المستحق',
  'takeaway':'سفري','dine-in':'داخل المطعم','delivery':'توصيل','new':'جديد','preparing':'قيد التحضير','ready':'جاهز','completed':'مكتمل','confirmed':'مؤكد','held':'معلق','refunded':'مسترد','cancelled':'ملغى',
 })
+
+# Version 0.3: offline sign-up and sign-in.
+TEXT['ckb'].update({
+ 'Sign up':'دروستکردنی ئەکاونت','Create account':'ئەکاونتێک دروست بکە','Full name':'ناوی تەواو',
+ 'Confirm password':'دووبارەکردنەوەی وشەی نهێنی','Show password':'پیشاندانی وشەی نهێنی',
+ 'Welcome back':'بەخێربێیتەوە','Offline restaurant management':'بەڕێوەبردنی چێشتخانە بەبێ ئینتەرنێت',
+ 'Use 10–256 characters. Passwords are case-sensitive.':'وشەی نهێنی لە ١٠ تا ٢٥٦ پیت بێت. پیتی گەورە و بچووک جیاوازن.',
+ 'Accounts stay on this computer. No internet required.':'ئەکاونتەکان لەسەر ئەم کۆمپیوتەرە دەمێننەوە. پێویست بە ئینتەرنێت نییە.',
+ 'The first account manages this restaurant.':'یەکەم ئەکاونت بەڕێوەبەری ئەم چێشتخانەیە دەبێت.',
+ 'New accounts have cashier access. Administrative settings and financial reports stay restricted.':'ئەکاونتی نوێ دەسەڵاتی کاشێری دەبێت. ڕێکخستنەکانی بەڕێوەبەر و ڕاپۆرتە داراییەکان سنووردارن.',
+ 'Account created. Sign in to continue.':'ئەکاونتەکە دروست کرا. بۆ بەردەوامبوون بچۆ ژوورەوە.',
+ 'Create the first account using Sign up.':'یەکەم ئەکاونت لە بەشی دروستکردنی ئەکاونت دروست بکە.',
+ 'Passwords do not match':'وشە نهێنییەکان یەکسان نین',
+ 'Password must contain 10–256 characters':'وشەی نهێنی دەبێت لە ١٠ تا ٢٥٦ پیت بێت',
+ 'Enter a username (maximum 80 characters)':'ناوی بەکارهێنەر بنووسە؛ زۆرترین ٨٠ پیت',
+ 'Enter a name (maximum 120 characters)':'ناوێک بنووسە؛ زۆرترین ١٢٠ پیت',
+ 'This username is already taken':'ئەم ناوی بەکارهێنەرە پێشتر بەکارهاتووە',
+ 'Invalid credentials or account temporarily locked':'زانیارییەکان هەڵەن یان ئەکاونتەکە بۆ ماوەیەک داخراوە',
+ 'Could not create account. Please try again.':'ئەکاونتەکە دروست نەکرا. تکایە دووبارە هەوڵ بدەوە.',
+ 'Could not sign in. Please try again.':'چوونەژوورەوە سەرکەوتوو نەبوو. تکایە دووبارە هەوڵ بدەوە.',
+})
+TEXT['ar'].update({
+ 'Sign up':'إنشاء حساب','Create account':'أنشئ حساباً','Full name':'الاسم الكامل','Confirm password':'تأكيد كلمة المرور',
+ 'Show password':'إظهار كلمة المرور','Welcome back':'مرحباً بعودتك','Offline restaurant management':'إدارة المطعم دون إنترنت',
+ 'Use 10–256 characters. Passwords are case-sensitive.':'استخدم 10–256 حرفاً. كلمات المرور حساسة لحالة الأحرف.',
+ 'Accounts stay on this computer. No internet required.':'تُحفظ الحسابات على هذا الكمبيوتر. لا تحتاج إلى الإنترنت.',
+ 'The first account manages this restaurant.':'الحساب الأول هو مدير هذا المطعم.',
+ 'New accounts have cashier access. Administrative settings and financial reports stay restricted.':'الحسابات الجديدة لها صلاحيات الكاشير. تبقى الإعدادات الإدارية والتقارير المالية مقيدة.',
+ 'Account created. Sign in to continue.':'تم إنشاء الحساب. سجّل الدخول للمتابعة.',
+ 'Create the first account using Sign up.':'أنشئ الحساب الأول من صفحة إنشاء حساب.',
+ 'Passwords do not match':'كلمتا المرور غير متطابقتين','Password must contain 10–256 characters':'يجب أن تتكون كلمة المرور من 10–256 حرفاً',
+ 'Enter a username (maximum 80 characters)':'أدخل اسم مستخدم بحد أقصى 80 حرفاً',
+ 'Enter a name (maximum 120 characters)':'أدخل اسماً بحد أقصى 120 حرفاً','This username is already taken':'اسم المستخدم هذا مستخدم بالفعل',
+ 'Invalid credentials or account temporarily locked':'بيانات الدخول غير صحيحة أو الحساب مقفل مؤقتاً',
+ 'Could not create account. Please try again.':'تعذر إنشاء الحساب. حاول مرة أخرى.','Could not sign in. Please try again.':'تعذر تسجيل الدخول. حاول مرة أخرى.',
+})

@@ -12,6 +12,18 @@ def validate_password(password):
         raise ValueError('Password must contain 10–256 characters')
 
 
+def validate_username(username):
+    username = username.strip()
+    if not username or len(username) > 80 or not username.isprintable():
+        raise ValueError('Enter a username (maximum 80 characters)')
+    return username
+
+
+def ensure_available(session, username):
+    if session.scalar(select(User.id).where(User.username == username)) is not None:
+        raise ValueError('This username is already taken')
+
+
 class Auth:
     def __init__(self, db):
         self.db = db
@@ -22,18 +34,45 @@ class Auth:
 
     def setup(self, username, password):
         validate_password(password)
-        username = username.strip()
-        if not username or len(username) > 80:
-            raise ValueError('Enter a username (maximum 80 characters)')
+        username = validate_username(username)
         with self.db.write() as s:
             if s.scalar(select(func.count(User.id))):
                 raise ValueError('An administrator already exists')
+            ensure_available(s, username)
             role = s.scalar(select(Role).where(Role.name == 'admin'))
             user = User(username=username, password_hash=HASHER.hash(password), role_id=role.id)
             s.add(user)
             s.flush()
             s.add(Employee(name=username, user_id=user.id))
             s.add(AuditLog(user_id=user.id, action='admin.setup', detail=username))
+            return user.id
+
+    def sign_up(self, username, password, confirmation, full_name=''):
+        """Create the first administrator or a restricted cashier account, atomically.
+
+        No caller-supplied role is accepted. Existing users/roles are never changed.
+        The user must sign in normally after registration.
+        """
+        username = validate_username(username)
+        validate_password(password)
+        if password != confirmation:
+            raise ValueError('Passwords do not match')
+        full_name = full_name.strip() or username
+        if len(full_name) > 120 or not full_name.isprintable():
+            raise ValueError('Enter a name (maximum 120 characters)')
+        with self.db.write() as s:
+            ensure_available(s, username)
+            first_account = s.scalar(select(func.count(User.id))) == 0
+            role_name = 'admin' if first_account else 'cashier'
+            role = s.scalar(select(Role).where(Role.name == role_name))
+            if role is None:
+                raise RuntimeError('Required account role is missing')
+            user = User(username=username, password_hash=HASHER.hash(password), role_id=role.id, active=True)
+            s.add(user)
+            s.flush()
+            s.add(Employee(user_id=user.id, name=full_name))
+            s.add(AuditLog(user_id=user.id, action='admin.setup' if first_account else 'user.signed_up',
+                           detail=f'{username}: {role_name}'))
             return user.id
 
     def login(self, username, password):
@@ -83,9 +122,9 @@ class Auth:
     def create_user(self, actor, username, password, role_name):
         self.require(actor, 'settings')
         validate_password(password)
-        if not username.strip():
-            raise ValueError('Username required')
+        username = validate_username(username)
         with self.db.write() as s:
+            ensure_available(s, username)
             role = s.scalar(select(Role).where(Role.name == role_name))
             if not role:
                 raise ValueError('Unknown role')

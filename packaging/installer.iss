@@ -1,5 +1,5 @@
 #define AppName "GAS HUNAR"
-#define AppVersion "0.2.0"
+#define AppVersion "0.3.0"
 [Setup]
 AppId={{7702833F-448C-4E42-9459-635A202C99A4}
 AppName={#AppName}
