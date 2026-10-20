@@ -2,6 +2,18 @@
 
 A native, offline restaurant desktop application in Python 3.12, PySide6, SQLAlchemy and SQLite. **Development phase 0.1.0: substantial application source is present; production acceptance is incomplete.** See [the exact checklist](docs/STATUS.md), including missing features and verification blockers.
 
+## Verified Windows build — 2026-10-20
+
+**GAS HUNAR.exe was generated and executed successfully on Windows GitHub Actions.**
+
+- [Download Windows EXE and screenshots (ZIP)](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248961027)
+- [Download screenshots and test results](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887/artifacts/12248486939)
+- [Successful Windows run](https://github.com/hamaatahir2005/gashunar/actions/runs/39388347887): 18 automated tests passed, real Qt screenshots captured, PyInstaller EXE built, packaged EXE self-check passed.
+
+Extract the ZIP and run `GAS HUNAR.exe`. Python is not required on the destination computer. First launch asks you to create your own administrator account. Screenshots use isolated demo data.
+
+This is a development build. Advanced feature gaps, physical printer testing and installer/update acceptance are still tracked in docs/STATUS.md. Earlier local Linux verification blockers below describe the earlier phase and are superseded by this Windows build.
+
 ## Run from source
 
 On a machine with Python 3.12:
