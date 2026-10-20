@@ -31,6 +31,7 @@ def main():
     from services.orders import Orders
     from models.schema import ExpenseCategory
     from core.paths import resource
+    from core.dates import business_today
     from ui.window import Window
     app=QApplication.instance() or QApplication([])
     app.setStyle('Fusion')
@@ -43,6 +44,7 @@ def main():
         products=[]
         for name,code,price,cost,cat in [('کەباب','KEB','10000','3000','برژاو'),('شاورمە','SHA','5000','1500','خێرا'),('چای','TEA','1000','100','خواردنەوە'),('ئاو','WAT','500','200','خواردنەوە'),('مریشکی برژاو','CHK','12000','4500','برژاو'),('برنج','RICE','3000','900','خواردن')]:
             products.append(catalog.save(actor,name,code,price,cost,cat))
+        catalog.image(actor,products[0],resource('assets/gas-hunar.png'))
         meat=ops.ingredient(actor,'گۆشت','g','10','500')
         ops.adjust_stock(actor,meat,'10000','Demo opening stock');ops.recipe(actor,products[0],meat,'200')
         customer=ops.customer(actor,'کڕیاری نموونە','07500000000','هەولێر')
@@ -54,10 +56,10 @@ def main():
         pending=orders.hold(actor,[{'product_id':products[4],'quantity':2,'notes':'بێ خوێ'}],kind='dine-in',table_id=tables[0],customer_id=customer)
         orders.confirm(actor,pending)
         with db.read() as s:category=s.scalar(select(ExpenseCategory.id))
-        ops.expense(actor,category,'2500','خەرجی نموونە',date.today().isoformat())
+        ops.expense(actor,category,'2500','خەرجی نموونە',business_today().isoformat())
         window=Window(db,auth,actor);window.resize(1366,800);window.show()
         try:
-            for name,filename in [('Dashboard','01-dashboard.png'),('Point of sale','02-pos.png'),('Kitchen','03-kitchen.png'),('Inventory','04-inventory.png')]:
+            for name,filename in [('Dashboard','01-dashboard.png'),('Point of sale','02-pos.png'),('Kitchen','03-kitchen.png'),('Inventory','04-inventory.png'),('Products','05-products.png'),('Reports','06-reports.png')]:
                 window.navigate(name)
                 if name=='Point of sale':
                     page=window.pages[name]
@@ -70,6 +72,13 @@ def main():
                 if not window.grab().save(str(target),'PNG'):
                     raise RuntimeError('Screenshot save failed: '+str(target))
                 print(target)
+            window.navigate('Dashboard');window.set_theme('light');app.processEvents()
+            window.grab().save(str(output/'07-dashboard-light.png'),'PNG')
+            window.set_theme('dark');window.navigate('Products')
+            from ui.products import ProductDialog
+            dialog=ProductDialog(window,products[0]);dialog.show();app.processEvents();dialog.grab().save(str(output/'08-product-photo-form.png'),'PNG');dialog.reject()
+            from ui.receipt import ReceiptDialog
+            receipt=ReceiptDialog(window,oid);receipt.show();app.processEvents();receipt.grab().save(str(output/'09-thermal-receipt.png'),'PNG');receipt.reject()
         finally:
             window.close();app.processEvents();db.engine.dispose()
     return 0

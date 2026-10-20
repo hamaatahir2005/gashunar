@@ -22,28 +22,68 @@ class Catalog:
                 q = q.where(Product.category_id == category)
             return list(s.scalars(q.order_by(Product.sort, Product.name).offset(max(offset, 0)).limit(min(limit, 500))))
 
-    def save(self, actor, name, code, price, cost='0', category='', barcode='', description='', product_id=None):
+    def _prepare_image(self, source):
+        if not source:
+            return None
+        source = Path(source)
+        if not source.is_file() or source.stat().st_size > 15 * 1024 * 1024:
+            raise ValueError('Choose an image smaller than 15 MB')
+        folder = self.db.path.parent / 'images'
+        folder.mkdir(exist_ok=True)
+        target = folder / f'{uuid.uuid4().hex}.png'
+        try:
+            with Image.open(source) as image:
+                if image.width * image.height > 30_000_000:
+                    raise ValueError('Image resolution too large')
+                image = ImageOps.exif_transpose(image).convert('RGB')
+                image.thumbnail((1024, 1024))
+                image.save(target, 'PNG')
+        except Exception as exc:
+            target.unlink(missing_ok=True)
+            raise ValueError('Cannot load this image. Choose a PNG, JPEG or WebP image.') from exc
+        return target
+
+    def save(self, actor, name, code, price, cost='0', category='', barcode='', description='', product_id=None, image_path=None):
         self.auth.require(actor, 'products')
         if not name.strip() or not code.strip():
             raise ValueError('Name and product code are required')
         price, cost = units(price), units(cost)
         if min(price, cost) < 0:
             raise ValueError('Prices cannot be negative')
-        with self.db.write() as s:
-            cat = s.scalar(select(Category).where(Category.name == category.strip())) if category.strip() else None
-            if category.strip() and not cat:
-                cat = Category(name=category.strip())
-                s.add(cat)
+        prepared = self._prepare_image(image_path)
+        try:
+            with self.db.write() as s:
+                cat = s.scalar(select(Category).where(Category.name == category.strip())) if category.strip() else None
+                if category.strip() and not cat:
+                    cat = Category(name=category.strip())
+                    s.add(cat)
+                    s.flush()
+                product = s.get(Product, product_id) if product_id else Product()
+                if not product:
+                    raise ValueError('Product not found')
+                product.name, product.code, product.price, product.cost = name.strip(), code.strip(), price, cost
+                product.category_id, product.barcode, product.description = cat.id if cat else None, barcode.strip() or None, description
+                s.add(product)
                 s.flush()
-            product = s.get(Product, product_id) if product_id else Product()
-            if not product:
-                raise ValueError('Product not found')
-            product.name, product.code, product.price, product.cost = name.strip(), code.strip(), price, cost
-            product.category_id, product.barcode, product.description = cat.id if cat else None, barcode.strip() or None, description
-            s.add(product)
-            s.flush()
-            s.add(AuditLog(user_id=actor, action='product.saved', detail=str(product.id)))
-            return product.id
+                if prepared:
+                    s.add(ProductImage(product_id=product.id, path=prepared.relative_to(self.db.path.parent).as_posix()))
+                s.add(AuditLog(user_id=actor, action='product.saved', detail=str(product.id)))
+                product_id = product.id
+        except Exception:
+            if prepared:
+                prepared.unlink(missing_ok=True)
+            raise
+        return product_id
+
+    def images(self, actor, product_ids):
+        self.auth.require(actor, 'pos' if not ({'*','products'} & self.auth.actions(actor)) else 'products')
+        with self.db.read() as s:
+            result = {}
+            for image in s.scalars(select(ProductImage).where(ProductImage.product_id.in_(product_ids)).order_by(ProductImage.id)):
+                path = (self.db.path.parent / image.path).resolve()
+                if path.is_relative_to(self.db.path.parent) and path.is_file():
+                    result[image.product_id] = path
+            return result
 
     def archive(self, actor, product_id):
         self.auth.require(actor, 'products')
@@ -56,23 +96,15 @@ class Catalog:
 
     def image(self, actor, product_id, source):
         self.auth.require(actor, 'products')
-        source = Path(source)
-        if source.stat().st_size > 15 * 1024 * 1024:
-            raise ValueError('Image must be smaller than 15 MB')
-        folder = self.db.path.parent / 'images'
-        folder.mkdir(exist_ok=True)
-        target = folder / f'{uuid.uuid4().hex}.png'
-        with Image.open(source) as im:
-            if im.width * im.height > 30_000_000:
-                raise ValueError('Image resolution too large')
-            im = ImageOps.exif_transpose(im).convert('RGB')
-            im.thumbnail((1024, 1024))
-            im.save(target, 'PNG')
+        target = self._prepare_image(source)
+        if target is None:
+            raise ValueError('Choose an image')
         try:
             with self.db.write() as s:
                 if not s.get(Product, product_id):
                     raise ValueError('Product not found')
-                s.add(ProductImage(product_id=product_id, path=str(target.relative_to(self.db.path.parent))))
+                s.add(ProductImage(product_id=product_id, path=target.relative_to(self.db.path.parent).as_posix()))
+                s.add(AuditLog(user_id=actor, action='product.image', detail=str(product_id)))
         except Exception:
             target.unlink(missing_ok=True)
             raise

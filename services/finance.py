@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from core.dates import business_today, parse_date, utc_midnight, period_dates
 from sqlalchemy import select, func
 from models.schema import Order, Payment, Refund, Expense, Ingredient, OrderItem, Customer, Purchase, RestaurantTable
 
@@ -9,15 +10,16 @@ class Finance:
 
     def summary(self, actor, start=None, end=None):
         self.auth.require(actor, 'reports')
-        start = start or date.today().isoformat()
-        end = end or (date.today() + timedelta(days=1)).isoformat()
-        if start >= end:
+        start_date = parse_date(start) if start is not None else business_today()
+        end_date = parse_date(end) if end is not None else start_date + timedelta(days=1)
+        if start_date >= end_date:
             raise ValueError('End date must be after start (end is exclusive)')
+        start, end = utc_midnight(start_date), utc_midnight(end_date)
         with self.db.read() as s:
             sales = list(s.scalars(select(Order).where(Order.confirmed_at >= start, Order.confirmed_at < end)))
             refunds = list(s.scalars(select(Refund).where(Refund.created_at >= start, Refund.created_at < end)))
             payments = list(s.scalars(select(Payment).where(Payment.created_at >= start, Payment.created_at < end)))
-            expenses = list(s.scalars(select(Expense).where(Expense.date >= start[:10], Expense.date < end[:10])))
+            expenses = list(s.scalars(select(Expense).where(Expense.date >= start_date.isoformat(), Expense.date < end_date.isoformat())))
             purchases = list(s.scalars(select(Purchase).where(Purchase.created_at >= start, Purchase.created_at < end)))
             gross_sales = sum(o.subtotal for o in sales)
             discounts = sum(o.discount for o in sales)
@@ -36,9 +38,26 @@ class Finance:
                     'pending_kitchen': s.scalar(select(func.count(Order.id)).where(Order.confirmed_at.is_not(None), Order.status != 'refunded', Order.kitchen_status != 'completed')),
                     'low_stock': s.scalar(select(func.count(Ingredient.id)).where(Ingredient.quantity <= Ingredient.minimum))}
 
-    def daily(self, actor, days=14):
+    def range_summary(self, actor, start, end):
+        first, last = parse_date(start), parse_date(end)
+        if first > last:
+            raise ValueError('Start date must be before or equal to end date')
+        return self.summary(actor, first, last + timedelta(days=1))
+
+    def periods(self, actor, reference=None):
         self.auth.require(actor, 'reports')
-        return [(str(date.today()-timedelta(days=i)), self.summary(actor, str(date.today()-timedelta(days=i)), str(date.today()-timedelta(days=i-1)))['net_sales']) for i in reversed(range(days))]
+        return {key: {'start': first.isoformat(), 'end': last.isoformat(),
+                      **self.range_summary(actor, first, last)}
+                for key, (first, last) in period_dates(reference).items()}
+
+    def daily(self, actor, days=14, end=None, metric='net_sales'):
+        self.auth.require(actor, 'reports')
+        if not 1 <= days <= 31 or metric not in ('net_sales', 'net_profit'):
+            raise ValueError('Invalid chart range or metric')
+        last = parse_date(end) if end is not None else business_today()
+        return [(str(last-timedelta(days=i)),
+                 self.range_summary(actor, last-timedelta(days=i), last-timedelta(days=i))[metric])
+                for i in reversed(range(days))]
 
     def best_sellers(self, actor):
         self.auth.require(actor, 'reports')

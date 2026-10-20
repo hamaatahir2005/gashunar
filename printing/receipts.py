@@ -5,6 +5,8 @@ from models.schema import Order, OrderItem, Invoice, Payment, OrderItemModifier
 from core.money import money
 from core.paths import resource
 from localization.strings import tr
+from core.dates import BUSINESS_TZ
+from datetime import datetime
 
 
 def receipt_data(db, order_id):
@@ -23,16 +25,19 @@ def receipt_html(db, order_id, settings):
     order, invoice, items, modifiers, paid = receipt_data(db, order_id)
     lang = settings.get('language', 'ckb')
     direction = 'rtl' if lang in ('ar', 'ckb') else 'ltr'
+    precision = int(settings.get('precision', '0'))
+    fmt = lambda value: money(value, precision)
+    local_time = datetime.fromisoformat(order.created_at).astimezone(BUSINESS_TZ).strftime('%Y-%m-%d %H:%M')
     rows = []
     for item in items:
         extras = ', '.join(m.name for m in modifiers[item.id])
-        rows.append(f'<tr><td>{escape(item.name)}<br/><small>{escape(extras)} {escape(item.notes)}</small></td><td>{item.quantity}</td><td>{money(item.price*item.quantity)}</td></tr>')
-    totals = [('Gross sales', order.subtotal), ('Discount', -order.discount), ('Tax', order.tax), ('Service', order.service), ('Total', order.total), ('Payment', paid)]
-    return f'''<html><head><meta charset="utf-8"/></head><body dir="{direction}" style="font-family:DejaVu Sans;font-size:10pt;">
+        rows.append(f'<tr><td>{escape(item.name)}<br/><small>{escape(extras)} {escape(item.notes)}</small></td><td>{item.quantity}</td><td>{fmt(item.price*item.quantity)}</td></tr>')
+    totals = [('Gross sales', order.subtotal), ('Discount', -order.discount), ('Tax', order.tax), ('Service', order.service), ('Total', order.total), ('Payment', paid), ('Balance due', max(order.total-paid,0))]
+    return f'''<html><head><meta charset="utf-8"/></head><body dir="{direction}" style="font-family:DejaVu Sans;font-size:8pt;color:#000;background:#fff;">
     <h2 align="center">{escape(settings['restaurant_name'])}</h2><p align="center">{escape(settings.get('address',''))}<br/>{escape(settings.get('phone',''))}<br/>{escape(settings.get('receipt_header',''))}</p>
-    <p>{escape(invoice.number if invoice else 'DRAFT')} • {escape(order.created_at[:19])}<br/>{escape(order.status)} • {escape(order.kind)}</p>
-    <table width="100%" cellspacing="4"><tr><th>{tr('Name',lang)}</th><th>{tr('Quantity',lang)}</th><th>{tr('Total',lang)}</th></tr>{''.join(rows)}</table><hr/>
-    {''.join(f'<p>{tr(k,lang)}: {money(v)}</p>' for k,v in totals)}<p align="center">{escape(settings.get('receipt_footer',''))}</p></body></html>'''
+    <p>{escape(invoice.number if invoice else 'DRAFT')} • {escape(local_time)}<br/>{escape(tr(order.status,lang))} • {escape(tr(order.kind,lang))}</p>
+    <table width="100%" cellspacing="4"><tr><th width="52%">{tr('Name',lang)}</th><th width="12%">{tr('Quantity',lang)}</th><th width="36%">{tr('Total',lang)}</th></tr>{''.join(rows)}</table><hr/>
+    {''.join(f'<p>{tr(k,lang)}: {fmt(v)}</p>' for k,v in totals)}<p align="center">{escape(settings.get('receipt_footer',''))}</p></body></html>'''
 
 
 def generate_pdf(db, order_id, settings, target):
@@ -78,18 +83,74 @@ def generate_pdf(db, order_id, settings, target):
     return Path(target)
 
 
-def print_preview(parent, html, paper='80'):
+def printer_names():
+    from PySide6.QtPrintSupport import QPrinterInfo
+    return list(QPrinterInfo.availablePrinterNames())
+
+
+def make_printer(html, paper='80', printer_name='', pdf_path=None):
+    """Common page geometry for real thermal printing, preview and Qt PDF tests."""
     from PySide6.QtCore import QSizeF, QMarginsF
-    from PySide6.QtGui import QTextDocument, QPageSize, QPageLayout
-    from PySide6.QtPrintSupport import QPrinter, QPrintPreviewDialog
+    from PySide6.QtGui import QTextDocument, QPageSize, QPageLayout, QFont
+    from PySide6.QtPrintSupport import QPrinter
+    if paper not in ('58', '80', 'A4'):
+        raise ValueError('Unsupported paper size')
+    if printer_name and printer_name not in printer_names():
+        raise ValueError('Selected printer is not installed')
     printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-    if paper == 'A4':
-        printer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-    else:
-        printer.setPageSize(QPageSize(QSizeF(int(paper), 250), QPageSize.Unit.Millimeter))
-    printer.setPageMargins(QMarginsF(3,3,3,3), QPageLayout.Unit.Millimeter)
+    if printer_name:
+        printer.setPrinterName(printer_name)
+    if pdf_path or not printer_name:
+        printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+        if pdf_path:
+            printer.setOutputFileName(str(pdf_path))
     document = QTextDocument()
+    document.setDefaultFont(QFont('DejaVu Sans', 8))
+    document.setDocumentMargin(0)
     document.setHtml(html)
+    if paper == 'A4':
+        page = QPageSize(QPageSize.PageSizeId.A4)
+        margins = QMarginsF(10,10,10,10)
+    else:
+        width = int(paper)
+        # Measure wrapping at the printable width; use a continuous thermal page.
+        document.setTextWidth((width-6)*96/25.4)
+        height = max(65, min(3000, document.size().height()*25.4/96+18))
+        page = QPageSize(QSizeF(width,height), QPageSize.Unit.Millimeter, 'GAS HUNAR '+paper+'mm', QPageSize.SizeMatchPolicy.ExactMatch)
+        margins = QMarginsF(3,3,3,3)
+    printer.setPageSize(page)
+    printer.setPageMargins(margins, QPageLayout.Unit.Millimeter)
+    return printer, document
+
+
+def print_preview(parent, html, paper='80', printer_name=''):
+    from PySide6.QtPrintSupport import QPrintPreviewDialog
+    printer, document = make_printer(html, paper, printer_name)
     dialog = QPrintPreviewDialog(printer, parent)
+    dialog.resize(850,650)
     dialog.paintRequested.connect(document.print_)
     dialog.exec()
+
+
+def print_receipt(parent, html, paper='80', printer_name=''):
+    from PySide6.QtWidgets import QDialog
+    from PySide6.QtPrintSupport import QPrintDialog, QPrinter
+    if not printer_names():
+        raise ValueError('Install a Windows printer to print. PDF export is still available.')
+    printer, document = make_printer(html, paper, printer_name)
+    dialog = QPrintDialog(printer,parent)
+    if dialog.exec() != QDialog.DialogCode.Accepted:
+        return False
+    document.print_(printer)
+    if printer.printerState() == QPrinter.PrinterState.Error:
+        raise RuntimeError('The printer reported an error. Check its connection and paper.')
+    return True
+
+
+def qt_receipt_pdf(html, target, paper='80'):
+    from PySide6.QtPrintSupport import QPrinter
+    printer, document = make_printer(html,paper,pdf_path=target)
+    document.print_(printer)
+    if printer.printerState() == QPrinter.PrinterState.Error or not Path(target).is_file():
+        raise RuntimeError('Receipt PDF could not be written')
+    return Path(target)

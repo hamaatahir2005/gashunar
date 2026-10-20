@@ -4,7 +4,7 @@ from pathlib import Path
 import logging
 from sqlalchemy import select,func
 from PySide6.QtCore import Qt,QTimer,QEvent,QThreadPool
-from PySide6.QtGui import QIcon,QPainter,QColor,QFont
+from PySide6.QtGui import QIcon,QPainter,QColor,QFont,QPixmap
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QGridLayout,
     QFrame,QPushButton,QLabel,QStackedWidget,QDialog,QMessageBox,QFileDialog,QComboBox,QLineEdit,
     QFormLayout,QScrollArea,QGroupBox,QStyle)
@@ -14,6 +14,9 @@ from localization.strings import tr
 from ui.common import Form,GridPage,Worker
 from ui.theme import stylesheet
 from ui.pos import POS
+from ui.financial import FinancialOverview
+from ui.products import ProductsPage
+from ui.receipt import ReceiptDialog
 from models.schema import *
 from services.auth import Auth
 from services.catalog import Catalog
@@ -40,22 +43,31 @@ class SalesChart(QWidget):
 class Window(QMainWindow):
     def __init__(self,db,auth,user):
         super().__init__();self.db,self.auth,self.user=db,auth,user
-        self.settings=Settings(db,auth);self.config=self.settings.all();self.language=self.config['language']
+        self.settings=Settings(db,auth);self.config=self.settings.for_user(user);self.language=self.config['language']
         self.catalog=Catalog(db,auth);self.orders=Orders(db,auth);self.ops=Operations(db,auth);self.finance=Finance(db,auth);self.backup=Backup(db,auth)
         self.workers=[];self.pages={};self.last_activity=datetime.now();self.locked=False;self.closing=False
-        self.setWindowTitle('GAS HUNAR — گەس هونەر');self.setWindowIcon(QIcon(str(resource('assets/gas-hunar.ico'))));self.resize(1366,800);self.setMinimumSize(1100,680)
+        self.setWindowTitle('GAS HUNAR — گەس هونەر');self.setWindowIcon(QIcon(str(resource('assets/gas-hunar.ico'))));self.resize(1366,768);self.setMinimumSize(1100,680)
         app=QApplication.instance();app.setLayoutDirection(Qt.LayoutDirection.RightToLeft if self.language in ('ckb','ar') else Qt.LayoutDirection.LeftToRight);app.setStyleSheet(stylesheet(self.config['theme']));app.installEventFilter(self)
         root=QWidget();self.setCentralWidget(root);layout=QHBoxLayout(root);layout.setContentsMargins(0,0,0,0)
         sidebar=QFrame();sidebar.setObjectName('sidebar');sidebar.setFixedWidth(206);nav=QVBoxLayout(sidebar)
         brand=QLabel('GAS HUNAR\nگەس هونەر');brand.setObjectName('brand');nav.addWidget(brand)
-        self.stack=QStackedWidget();nav_scroll=QScrollArea();nav_scroll.setWidgetResizable(True);nav_scroll.setWidget(sidebar);nav_scroll.setFixedWidth(226);layout.addWidget(nav_scroll);layout.addWidget(self.stack,1)
+        self.stack=QStackedWidget();nav_scroll=QScrollArea();nav_scroll.setWidgetResizable(True);nav_scroll.setWidget(sidebar);nav_scroll.setFixedWidth(224);layout.addWidget(nav_scroll)
+        content=QWidget();content_layout=QVBoxLayout(content);content_layout.setContentsMargins(0,0,0,0);content_layout.setSpacing(0)
+        topbar=QFrame();topbar.setObjectName('topbar');top=QHBoxLayout(topbar);top.setContentsMargins(22,12,22,12)
+        self.page_heading=QLabel(self.t('Workspace'));self.page_heading.setObjectName('eyebrow');top.addWidget(self.page_heading);top.addStretch()
+        offline=QLabel('● '+self.t('Offline'));offline.setObjectName('offline');top.addWidget(offline)
+        top.addWidget(QLabel(self.t('Appearance')));self.theme_picker=QComboBox();self.theme_picker.setMinimumWidth(120)
+        self.theme_picker.addItem(self.t('Dark'),'dark');self.theme_picker.addItem(self.t('Light'),'light');self.theme_picker.setCurrentIndex(max(self.theme_picker.findData(self.config['theme']),0))
+        self.theme_picker.currentIndexChanged.connect(lambda:self.safe(lambda:self.set_theme(self.theme_picker.currentData())));top.addWidget(self.theme_picker)
+        content_layout.addWidget(topbar);content_layout.addWidget(self.stack,1);layout.addWidget(content,1)
         actions=auth.actions(user)
         entries=[('Dashboard','reports',self.dashboard),('Point of sale','pos',lambda:POS(self)),('Orders','pos',self.order_page),('Products','products',self.product_page),('Tables','tables',self.table_page),('Kitchen','kitchen',self.kitchen_page),('Inventory','inventory',self.inventory_page),('Purchases','inventory',self.purchase_page),('Expenses','expenses',self.expense_page),('Customers','customers',self.customer_page),('Employees','employees',self.employee_page),('Reports','reports',self.report_page),('Settings','settings',self.settings_page),('Backups','backup',self.backup_page)]
-        self.factories={}
+        self.factories={};self.nav_buttons={}
+        nav_icons={'Dashboard':'SP_ComputerIcon','Point of sale':'SP_DialogApplyButton','Orders':'SP_FileDialogDetailedView','Products':'SP_DirIcon','Tables':'SP_FileDialogContentsView','Kitchen':'SP_DialogYesButton','Inventory':'SP_DriveHDIcon','Purchases':'SP_DialogOpenButton','Expenses':'SP_FileIcon','Customers':'SP_DirHomeIcon','Employees':'SP_FileDialogInfoView','Reports':'SP_FileDialogListView','Settings':'SP_FileDialogDetailedView','Backups':'SP_DialogSaveButton'}
         for title,permission,factory in entries:
             if '*' not in actions and permission not in actions:continue
             self.factories[title]=factory
-            b=QPushButton(self.t(title));b.setObjectName('nav');b.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogDetailedView));b.clicked.connect(lambda _,name=title:self.safe(lambda:self.navigate(name)));nav.addWidget(b)
+            b=QPushButton(self.t(title));b.setObjectName('nav');b.setCheckable(True);self.nav_buttons[title]=b;b.setIcon(self.style().standardIcon(getattr(QStyle.StandardPixmap,nav_icons[title],QStyle.StandardPixmap.SP_FileIcon)));b.clicked.connect(lambda _,name=title:self.safe(lambda:self.navigate(name)));nav.addWidget(b)
         nav.addStretch()
         for label,fn in [('Open drawer',self.open_drawer),('Close drawer',self.close_drawer),('Change password',self.change_password),('Logout',self.logout)]:
             if label in ('Open drawer','Close drawer') and '*' not in actions and 'pos' not in actions:continue
@@ -92,6 +104,8 @@ class Window(QMainWindow):
         page=self.pages[title]
         if hasattr(page,'reload'):page.reload()
         self.stack.setCurrentWidget(page)
+        self.page_heading.setText(self.t('Workspace')+' / '+self.t(title))
+        for name,button in self.nav_buttons.items():button.setChecked(name==title)
     def refresh(self,page):page.reload()
     def background(self,fn,callback):
         worker=Worker(fn);self.workers.append(worker)
@@ -100,46 +114,18 @@ class Window(QMainWindow):
         worker.signals.failed.connect(lambda _:self.workers.remove(worker) if worker in self.workers else None)
         QThreadPool.globalInstance().start(worker)
 
+    def set_theme(self,theme):
+        self.settings.save_preferences(self.user,{'theme':theme})
+        self.config['theme']=theme
+        self.theme_picker.blockSignals(True);self.theme_picker.setCurrentIndex(self.theme_picker.findData(theme));self.theme_picker.blockSignals(False)
+        QApplication.instance().setStyleSheet(stylesheet(theme))
+        for page in self.pages.values():page.update()
+
     def dashboard(self):
-        w=QWidget();layout=QVBoxLayout(w);label=QLabel(self.t('Dashboard'));label.setObjectName('heading');layout.addWidget(label)
-        cards=QGridLayout();layout.addLayout(cards)
-        metrics={}
-        keys=[('Gross sales','gross_sales'),('Net sales','net_sales'),('Expenses','expenses'),('Gross profit','gross_profit'),('Net profit','net_profit'),('Cash movement','cash_movement'),('Order count','orders'),('Customers served','customers'),('Open tables','open_tables'),('Completed','completed'),('Pending kitchen','pending_kitchen'),('Low stock','low_stock')]
-        counts={k for _,k in keys[6:]}
-        for i,(label,key) in enumerate(keys):
-            box=QGroupBox(self.t(label));bl=QVBoxLayout(box);value=QLabel('—');value.setObjectName('metric');bl.addWidget(value);cards.addWidget(box,i//4,i%4);metrics[key]=value
-        chart=SalesChart([]);layout.addWidget(chart)
-        best=QLabel();best.setWordWrap(True);layout.addWidget(best)
-        def reload():
-            result=self.finance.summary(self.user)
-            for key,widget in metrics.items():widget.setText(str(result[key]) if key in counts else money(result[key]))
-            chart.data=self.finance.daily(self.user);chart.update();best.setText(' • '.join(f'{name}: {qty}' for name,qty in self.finance.best_sellers(self.user)))
-        w.reload=reload;return w
+        return FinancialOverview(self)
 
     def product_page(self):
-        def loader():
-            return [(p.id,p.name,p.code,money(p.price),money(p.cost),p.barcode or '',p.active) for p in self.catalog.list(self.user,limit=500,archived=True)]
-        page=self.page('Products',['ID','Name','Code','Price','Cost','Barcode','Available'],loader)
-        def edit(existing=False):
-            product=None;category=''
-            if existing:
-                with self.db.read() as s:
-                    product=s.get(Product,page.selected());cat=s.get(Category,product.category_id) if product.category_id else None;category=cat.name if cat else ''
-            values=self.form('Edit' if existing else 'Add',[('name','Name',product.name if product else ''),('code','Code',product.code if product else ''),('price','Price',amount(product.price) if product else '0'),('cost','Cost',amount(product.cost) if product else '0'),('category','Category',category),('barcode','Barcode',product.barcode or '' if product else ''),('description','Description',product.description if product else '')])
-            if values:self.catalog.save(self.user,**values,product_id=product.id if product else None);page.reload()
-        page.button('Add',lambda:edit());page.button('Edit',lambda:edit(True))
-        page.button('Archive',lambda:(self.catalog.archive(self.user,page.selected()),page.reload()) if self.confirm('Archive selected product?') else None)
-        def image():
-            product_id=page.selected();path,_=QFileDialog.getOpenFileName(self,'Image','','Images (*.png *.jpg *.jpeg *.webp)')
-            if path:self.catalog.image(self.user,product_id,path)
-        page.button('Image',image)
-        def export():
-            path,_=QFileDialog.getSaveFileName(self,'CSV','products.csv','CSV (*.csv)')
-            if path:self.catalog.export_csv(self.user,path)
-        def import_():
-            path,_=QFileDialog.getOpenFileName(self,'CSV','','CSV (*.csv)')
-            if path:self.catalog.import_csv(self.user,path);page.reload()
-        page.button('Export CSV',export);page.button('Import CSV',import_);return page
+        return ProductsPage(self)
 
     def order_page(self):
         def load():
@@ -165,12 +151,7 @@ class Window(QMainWindow):
 
     def receipt(self,order_id):
         self.auth.require(self.user,'pos')
-        v=self.form('Receipt',[('action','Receipt',[('Print preview','print'),('PDF','pdf')])])
-        if not v:return
-        if v['action']=='print':print_preview(self,receipt_html(self.db,order_id,self.config),self.config['paper_width'])
-        else:
-            path,_=QFileDialog.getSaveFileName(self,'PDF',f'invoice-{order_id}.pdf','PDF (*.pdf)')
-            if path:generate_pdf(self.db,order_id,self.config,path)
+        ReceiptDialog(self,order_id).exec()
 
     def table_page(self):
         def loader():
@@ -264,32 +245,7 @@ class Window(QMainWindow):
         page.button('Add',create);page.button('Attendance',lambda:self.ops.attendance(self.user,page.selected()));return page
 
     def report_page(self):
-        w=QWidget();layout=QVBoxLayout(w);heading=QLabel(self.t('Reports'));heading.setObjectName('heading');layout.addWidget(heading)
-        bar=QHBoxLayout();start=QLineEdit(date.today().replace(day=1).isoformat());end=QLineEdit((date.today()+timedelta(days=1)).isoformat());bar.addWidget(start);bar.addWidget(end);layout.addLayout(bar)
-        label=QLabel('End date is exclusive. Revenue excludes tax; purchases are inventory assets.');label.setWordWrap(True);layout.addWidget(label)
-        summary=QLabel();summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse);layout.addWidget(summary);layout.addStretch()
-        def run(export=None):
-            a,b=start.text(),end.text();date.fromisoformat(a);date.fromisoformat(b)
-            if export:
-                path,_=QFileDialog.getSaveFileName(self,'Export','report.'+export,f'{export.upper()} (*.{export})')
-                if not path:return
-            else:path=None
-            def complete(data):
-                counts={'orders','customers','completed','open_tables','pending_kitchen','low_stock'}
-                summary.setText('\n'.join(f'{k.replace("_"," ").title()}: {v if k in counts else money(v)}' for k,v in data.items()))
-            def work():
-                data=self.finance.summary(self.user,a,b)
-                if export=='csv':
-                    from reports.export import csv_report
-                    csv_report(path,data)
-                elif export=='pdf':
-                    from reports.export import pdf_report
-                    pdf_report(path,data,self.config['restaurant_name'])
-                return data
-            self.background(work,complete)
-        for text,fn in [('Refresh',lambda:run()),('Export CSV',lambda:run('csv')),('Export PDF',lambda:run('pdf'))]:
-            btn=QPushButton(self.t(text));btn.clicked.connect(lambda _,f=fn:self.safe(f));bar.addWidget(btn)
-        return w
+        return FinancialOverview(self,reports=True)
 
     def settings_page(self):
         scroll=QScrollArea();scroll.setWidgetResizable(True);w=QWidget();scroll.setWidget(w);layout=QFormLayout(w);fields={}
@@ -303,7 +259,7 @@ class Window(QMainWindow):
             fields[key]=widget;layout.addRow(self.t(key.replace('_',' ').title()),widget)
         button=QPushButton(self.t('Save'));layout.addRow(button)
         def save():
-            values={k:(w.currentData() if isinstance(w,QComboBox) else w.text()) for k,w in fields.items()};self.settings.save(self.user,values);self.config=self.settings.all();QApplication.instance().setStyleSheet(stylesheet(self.config['theme']));self.backup_timer.setInterval(int(self.config['backup_minutes'])*60000);self.message('Success',self.t('Settings saved')+' • Restart to apply language changes.')
+            values={k:(w.currentData() if isinstance(w,QComboBox) else w.text()) for k,w in fields.items()};self.settings.save(self.user,values);self.config=self.settings.for_user(self.user);self.set_theme(values['theme']);self.backup_timer.setInterval(int(self.config['backup_minutes'])*60000);self.message('Success',self.t('Settings saved')+' • Restart to apply language changes.')
         button.clicked.connect(lambda:self.safe(save));return scroll
 
     def backup_page(self):

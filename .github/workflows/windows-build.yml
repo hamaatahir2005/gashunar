@@ -7,7 +7,7 @@ concurrency:
   group: gas-hunar-windows-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  contents: read
+  contents: write
 jobs:
   windows:
     runs-on: windows-latest
@@ -42,3 +42,44 @@ jobs:
             dist/SHA256.txt
             dist/build-dependencies.txt
           if-no-files-found: error
+      - name: Publish development EXE and public preview images
+        if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { owner, repo } = context.repo;
+            const source = context.payload.pull_request?.head.sha || context.sha;
+            const tag = `v0.2.0-build-${context.runNumber}`;
+            const release = await github.rest.repos.createRelease({
+              owner, repo, tag_name: tag, target_commitish: source,
+              name: `GAS HUNAR 0.2 — development build ${context.runNumber}`,
+              prerelease: true, draft: false,
+              body: 'Offline Windows EXE with light/dark appearance, daily/weekly/monthly profit, inclusive manual date ranges, local product-photo forms and 58/80mm receipt printing. Automated tests and packaged EXE self-check passed. This is a development build: physical printer and installer/update acceptance remain unverified. Download GAS HUNAR.exe below; Python is not required on the destination computer.'
+            });
+            for (const name of ['GAS HUNAR.exe', 'SHA256.txt', 'build-dependencies.txt']) {
+              await github.rest.repos.uploadReleaseAsset({owner, repo, release_id: release.data.id, name,
+                data: fs.readFileSync(path.join('dist', name)),
+                headers: {'content-type': name.endsWith('.exe') ? 'application/octet-stream' : 'text/plain'}});
+            }
+            const entries = [];
+            for (const name of fs.readdirSync('dist/screenshots').filter(n => n.endsWith('.png'))) {
+              const blob = await github.rest.git.createBlob({owner, repo, encoding: 'base64',
+                content: fs.readFileSync(path.join('dist/screenshots',name)).toString('base64')});
+              entries.push({path:name,mode:'100644',type:'blob',sha:blob.data.sha});
+            }
+            entries.push({path:'README.md',mode:'100644',type:'blob',content:
+              '# GAS HUNAR — real application previews\n\nCaptured on Windows with isolated, marked demonstration data.\n\n' +
+              entries.map(e => `## ${e.path}\n\n![${e.path}](${e.path})`).join('\n\n') +
+              `\n\n[Download the development EXE](${release.data.html_url})\n`});
+            const tree = await github.rest.git.createTree({owner,repo,tree:entries});
+            let parent=source, exists=false;
+            try {const ref=await github.rest.git.getRef({owner,repo,ref:'heads/build-previews'});parent=ref.data.object.sha;exists=true;}
+            catch(e) {if(e.status!==404)throw e;}
+            const commit=await github.rest.git.createCommit({owner,repo,message:`Publish real Windows previews for build ${context.runNumber}`,tree:tree.data.sha,parents:[parent]});
+            if(exists)await github.rest.git.updateRef({owner,repo,ref:'heads/build-previews',sha:commit.data.sha});
+            else await github.rest.git.createRef({owner,repo,ref:'refs/heads/build-previews',sha:commit.data.sha});
+            core.summary.addHeading('Downloads').addLink('Windows EXE release',release.data.html_url)
+              .addBreak().addLink('Real screenshots',`https://github.com/${owner}/${repo}/tree/build-previews`);
+            await core.summary.write();

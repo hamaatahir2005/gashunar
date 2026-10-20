@@ -10,7 +10,7 @@ class Settings:
 
     def all(self):
         with self.db.read() as s:
-            return {v.key: v.value for v in s.scalars(select(Setting))}
+            return {**DEFAULTS, **{v.key: v.value for v in s.scalars(select(Setting).where(Setting.key.in_(DEFAULTS)))}}
 
     def save(self, actor, values):
         self.auth.require(actor, 'settings')
@@ -39,3 +39,30 @@ class Settings:
             for key, value in values.items():
                 s.merge(Setting(key=key, value=value))
             s.add(AuditLog(user_id=actor, action='settings.changed', detail=', '.join(values)))
+
+    def for_user(self, actor):
+        values = self.all()
+        with self.db.read() as s:
+            for name in ('theme', 'printer_name', 'paper_width'):
+                pref = s.get(Setting, f'user.{actor}.{name}')
+                if pref:
+                    values[name] = pref.value
+        return values
+
+    def save_preferences(self, actor, values):
+        # Preferences cannot grant administrative access or alter tax/accounting policy.
+        if not self.auth.actions(actor):
+            raise PermissionError('Active account required')
+        for key, value in values.items():
+            if key not in ('theme', 'printer_name', 'paper_width'):
+                raise ValueError('Unsupported user preference')
+            if key == 'theme' and value not in ('dark', 'light'):
+                raise ValueError('Unsupported theme')
+            if key == 'paper_width' and value not in ('58', '80', 'A4'):
+                raise ValueError('Unsupported paper size')
+            if not isinstance(value, str) or len(value) > 300:
+                raise ValueError('Invalid preference')
+        with self.db.write() as s:
+            for key, value in values.items():
+                s.merge(Setting(key=f'user.{actor}.{key}', value=value))
+            s.add(AuditLog(user_id=actor, action='preferences.changed', detail=', '.join(values)))
