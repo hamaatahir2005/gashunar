@@ -38,4 +38,12 @@ Captured on Windows with isolated, marked demonstration data.
 
 ![09-thermal-receipt.png](09-thermal-receipt.png)
 
-[Download the development EXE](https://github.com/hamaatahir2005/gashunar/releases/tag/v0.2.0-build-4)
+## 10-login.png
+
+![10-login.png](10-login.png)
+
+## 11-sign-up.png
+
+![11-sign-up.png](11-sign-up.png)
+
+[Download the development EXE](https://github.com/hamaatahir2005/gashunar/releases/tag/v0.3.0-build-5)
